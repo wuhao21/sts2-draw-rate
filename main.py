@@ -11,6 +11,25 @@ from paddleocr import PaddleOCR
 from fuzzywuzzy import process
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+import sys
+from pathlib import Path
+##############
+# for build only
+import pyclipper
+import shapely
+import skimage
+#########
+
+# 获取程序运行的根目录
+if getattr(sys, 'frozen', False):
+    # 如果是打包后的 exe
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    # 如果是源码运行
+    BASE_DIR = Path(__file__).parent
+
+# 以后读取文件都用这个 BASE_DIR
+CSV_PATH = BASE_DIR / "result_cleaned.csv"
 
 # --- 1. 环境修复与 DPI 意识 ---
 try:
@@ -95,8 +114,8 @@ class OverlayWindow(QMainWindow):
         print("    [Ctrl+Q] 分析  [Ctrl+H] 隐藏/显示  [Ctrl+Shift+X] 退出")
 
     def load_data(self):
-        if os.path.exists('result_cleaned.csv'):
-            df = pd.read_csv('result_cleaned.csv')
+        if CSV_PATH.exists():
+            df = pd.read_csv(CSV_PATH)
             df['卡牌名称'] = df['卡牌名称'].astype(str).str.strip()
             self.card_db = df.set_index('卡牌名称').to_dict('index')
         else:

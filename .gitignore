@@ -15,3 +15,5 @@ __pycache__/
 
 # Local outputs / debug artifacts
 debug_*.png
+
+dist/StS2_Helper/_internal/
