@@ -13,13 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
+COPY requirements.txt .
+
 RUN python -m pip install --no-cache-dir --upgrade pip && \
-    python -m pip install --no-cache-dir \
-    paddlepaddle==3.1.1 \
-    paddleocr==3.4.0 \
-    pandas \
-    pillow \
-    opencv-python-headless
+    python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
