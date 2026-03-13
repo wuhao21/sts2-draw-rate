@@ -1,0 +1,19 @@
+.venv/
+venv/
+
+# OCR image inputs
+screenshots/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# Local outputs / debug artifacts
+debug_*.png
+result.csv
+result_cleaned.csv
