@@ -54,11 +54,14 @@ class OCRWorker(QThread):
             ocr_res = self.ocr.ocr(debug_path, cls=False)
             if ocr_res and ocr_res[0]:
                 full_text = "".join([line[1][0] for line in ocr_res[0]])
-                # 过滤掉干扰数字（如费用）
-                clean_text = re.sub(r'[0-9]', '', full_text)
+                
+                # 【核心修改】只提取识别结果中的中文字符
+                # 这会自动过滤掉能量数字、升级加号以及可能出现的杂质符号
+                clean_text = "".join(re.findall(r'[\u4e00-\u9fa5]', full_text))
                 
                 if clean_text:
                     match, score = process.extractOne(clean_text, self.db_keys)
+                    # 因为过滤了 "+"，fuzzywuzzy 的匹配得分会更高
                     results.append(match if score > 45 else f"识别不清({clean_text})")
                 else:
                     results.append("未检出文字")
