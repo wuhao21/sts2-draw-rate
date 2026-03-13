@@ -32,27 +32,6 @@ python main.py
 
 如果第 3 步报错“`python` 不是内部或外部命令”，先安装 Python 3.12，并勾选 “Add Python to PATH”。
 
-## 0.1 Docker 启动（傻瓜版）
-
-适合只跑 OCR 批处理（`ocr.py`）。  
-`main.py` 是 Windows 桌面 GUI 程序，不建议普通 Docker 直接运行。
-
-1. 安装 Docker Desktop 并启动
-2. 在项目目录打开终端
-3. 构建镜像：
-
-```bash
-docker build -t sts2-ocr .
-```
-
-4. 运行 OCR（把本地截图目录挂载到容器）：
-
-```bash
-docker run --rm -v "%cd%/screenshots:/app/screenshots" sts2-ocr
-```
-
-运行完成后，输出文件会在项目目录里（如 `result_cleaned.csv`）。
-
 ## 1. 常规安装（推荐 Python 3.12）
 
 ```bash
