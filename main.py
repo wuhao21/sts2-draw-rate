@@ -176,7 +176,17 @@ class OverlayWindow(QMainWindow):
                 self.labels[i].setStyleSheet("color: #666; font-size: 14px; background-color: rgba(0, 0, 0, 150);")
 
     def close_app(self):
-        QApplication.quit()
+        """核弹级退出：不走 Qt 的温情清理，直接杀掉进程"""
+        print("\n[!] 收到强制关闭指令，正在抹除进程...")
+        try:
+            # 1. 尝试正常停止线程（温和手段）
+            if hasattr(self, 'worker') and self.worker.isRunning():
+                self.worker.terminate()
+        except:
+            pass
+        
+        # 2. 暴力退出（强硬手段）
+        # os._exit(0) 会立即停止 Python 解释器，不会触发任何清理钩子或 try/finally
         os._exit(0)
 
 if __name__ == "__main__":
