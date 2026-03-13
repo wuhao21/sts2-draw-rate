@@ -15,5 +15,3 @@ __pycache__/
 
 # Local outputs / debug artifacts
 debug_*.png
-result.csv
-result_cleaned.csv
