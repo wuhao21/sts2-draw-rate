@@ -13,6 +13,7 @@ public class CardRecommendation
     public string Verdict { get; set; } = "";  // 极力推荐 / 推荐 / 可选 / 可跳 / 不推荐
     public string Reason { get; set; } = "";   // 简短原因
     public string ColorHex { get; set; } = "#FFFFFF";
+    public string Breakdown { get; set; } = ""; // 详细计算过程
 
     public static CardRecommendation Missing(string cardName) => new()
     {
@@ -31,12 +32,17 @@ public static class CardScorer
     private const float W_Statistics = 0.30f;   // 统计数据权重
     private const float W_DeckNeed = 0.20f;     // 牌组需求权重
 
-    // 通用好牌 — 在任何流派中都有价值的卡
+    // 通用好牌 — 在任何流派中都有价值的卡（含强力无色牌）
     private static readonly HashSet<string> UniversallyGood = new(StringComparer.OrdinalIgnoreCase)
     {
+        // 角色牌
         "Offering", "BattleTrance", "Acrobatics", "Footwork", "Adrenaline",
-        "Apotheosis", "Apparition", "WellLaidPlans", "EscapePlan",
-        "Defragment", "EchoForm", "Buffer", "WraithForm"
+        "Defragment", "EchoForm", "Buffer", "WraithForm",
+        // 无色牌
+        "Apotheosis", "DarkShackles", "Shockwave", "SecretTechnique", "SecretWeapon",
+        "MasterOfStrategy", "Jackpot", "HandOfGreed", "Equilibrium", "PanicButton",
+        "Mayhem", "Scrawl", "BeatDown", "Prowess", "TheBomb", "Panache",
+        "Purity", "Discovery", "Finesse", "FlashOfSteel"
     };
 
     /// <summary>
@@ -60,23 +66,57 @@ public static class CardScorer
         // 3. 牌组需求分 (0-100)
         float needScore = ComputeNeedScore(cardInternalName, deckProfile, currentDeck);
 
-        // 加权总分
-        float finalScore;
+        // 根据牌组大小动态调整权重 — 前期需要生存基础，后期追求流派协同
+        int deckSize = currentDeck.Count;
+        float wArch, wStat, wNeed;
+        string phase;
+        if (archetype.IsUnformed)
+        {
+            wArch = 0.10f; wStat = 0.50f; wNeed = 0.40f;
+            phase = "未成型";
+        }
+        else if (deckSize <= 12)
+        {
+            wArch = 0.20f; wStat = 0.35f; wNeed = 0.45f;
+            phase = "前期";
+        }
+        else if (deckSize <= 18)
+        {
+            wArch = 0.35f; wStat = 0.30f; wNeed = 0.35f;
+            phase = "中期";
+        }
+        else if (deckSize <= 25)
+        {
+            wArch = 0.50f; wStat = 0.25f; wNeed = 0.25f;
+            phase = "成型";
+        }
+        else
+        {
+            wArch = 0.55f; wStat = 0.20f; wNeed = 0.25f;
+            phase = "后期";
+        }
+
+        float finalScore = archetypeScore * wArch + statScore * wStat + needScore * wNeed;
         string reason;
 
         if (archetype.IsUnformed)
         {
-            // 流派未成型时，统计数据权重增大
-            finalScore = statScore * 0.6f + needScore * 0.3f + archetypeScore * 0.1f;
             reason = GetNeedReason(cardInternalName, deckProfile);
             if (string.IsNullOrEmpty(reason))
                 reason = "流派未成型，参考统计";
         }
         else
         {
-            finalScore = archetypeScore * W_Archetype + statScore * W_Statistics + needScore * W_DeckNeed;
             reason = GetArchetypeReason(cardInternalName, archetype);
         }
+
+        // 构建详细分解
+        var bd = new System.Text.StringBuilder();
+        bd.AppendLine($"阶段: {phase} ({deckSize}张)");
+        bd.AppendLine($"流派: {archetypeScore:F0} x{wArch:P0} = {archetypeScore * wArch:F0}");
+        bd.AppendLine($"统计: {statScore:F0} x{wStat:P0} = {statScore * wStat:F0}");
+        bd.AppendLine($"需求: {needScore:F0} x{wNeed:P0} = {needScore * wNeed:F0}");
+        bd.AppendLine($"基础分: {finalScore:F0}");
 
         // 重复卡惩罚 — currentDeck 是模拟牌组（已含候选牌自身），需减1得到实际持有数
         int dupeCount = CountCard(currentDeck, cardInternalName) - 1;
@@ -84,14 +124,12 @@ public static class CardScorer
         {
             finalScore *= 0.6f;
             reason = $"已有{dupeCount}张，慎选";
+            bd.AppendLine($"重复x{dupeCount}: x0.6");
         }
-        else if (dupeCount == 1)
+        else if (dupeCount == 1 && archetypeScore < 70)
         {
-            // 轻微惩罚，除非是核心卡
-            if (archetypeScore < 70)
-            {
-                finalScore *= 0.85f;
-            }
+            finalScore *= 0.85f;
+            bd.AppendLine("已有1张: x0.85");
         }
 
         // 牌组过大惩罚
@@ -99,23 +137,7 @@ public static class CardScorer
         {
             finalScore *= 0.7f;
             reason = "牌组臃肿，建议跳过";
-        }
-
-        // 前期加分 — 牌组小时加牌比跳过更有价值
-        int deckSize = currentDeck.Count;
-        if (deckSize <= 10)
-        {
-            finalScore += 18f;
-            if (string.IsNullOrEmpty(reason) || reason == "一般" || reason == "流派未成型，参考统计")
-                reason = "前期补强";
-        }
-        else if (deckSize <= 15)
-        {
-            finalScore += 10f;
-        }
-        else if (deckSize <= 20)
-        {
-            finalScore += 4f;
+            bd.AppendLine("牌组臃肿: x0.7");
         }
 
         // 血量感知 — 血量低时，格挡/防御牌加分
@@ -125,13 +147,15 @@ public static class CardScorer
             if (hpRatio < 0.4f && DeckAnalyzer.IsBlockCard(cardInternalName))
             {
                 finalScore += 12f;
-                if (reason == "前期补强" || reason == "一般")
+                if (reason == "一般")
                     reason = "血量低，需防御";
+                bd.AppendLine($"低血量防御: +12");
             }
         }
 
         // Clamp
         finalScore = Math.Clamp(finalScore, 0, 100);
+        bd.AppendLine($"最终: {finalScore:F0}");
 
         var rec = new CardRecommendation { FinalScore = finalScore };
         rec.Stars = finalScore switch
@@ -159,6 +183,7 @@ public static class CardScorer
             _ => "#A0A0A0"   // 柔灰 — 垃圾
         };
         rec.Reason = reason;
+        rec.Breakdown = bd.ToString().TrimEnd();
 
         return rec;
     }

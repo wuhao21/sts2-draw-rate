@@ -34,14 +34,15 @@ public class Archetype
 }
 
 /// <summary>
-/// 所有流派定义 — 基于中英文社区攻略数据
+/// 所有流派定义 — 基于卡牌效果描述和社区攻略数据
+/// 卡牌内部名来源: ptrlrd/spire-codex (sts2.dll 反编译)
 /// </summary>
 public static class ArchetypeDatabase
 {
     public static List<Archetype> All { get; } = new()
     {
         // ============================================================
-        //  铁甲战士 (Ironclad)
+        //  铁甲战士 (Ironclad) — 87张
         // ============================================================
         new Archetype
         {
@@ -49,8 +50,10 @@ public static class ArchetypeDatabase
             Name = "Block",
             DisplayName = "格挡流",
             SignatureCards = { "BodySlam", "Barricade", "Impervious" },
-            CoreCards = { "ShrugItOff", "FlameBarrier", "Unmovable", "CrimsonMantle", "BloodWall", "Entrench" },
-            SynergyCards = { "Offering", "BattleTrance", "SecondWind", "TrueGrit", "Juggernaut", "Tank" },
+            CoreCards = { "ShrugItOff", "FlameBarrier", "Unmovable", "CrimsonMantle", "BloodWall",
+                          "Entrench" },
+            SynergyCards = { "Offering", "BattleTrance", "SecondWind", "TrueGrit", "Juggernaut", "Tank",
+                             "StoneArmor", "Armaments", "IronWave", "Rage", "Grapple", "Taunt" },
             AntiCards = { "Whirlwind", "Rampage" }
         },
         new Archetype
@@ -59,8 +62,10 @@ public static class ArchetypeDatabase
             Name = "Exhaust",
             DisplayName = "消耗流",
             SignatureCards = { "FeelNoPain", "DarkEmbrace", "Corruption" },
-            CoreCards = { "BurningPact", "TrueGrit", "FiendFire", "SecondWind", "PactsEnd", "AshenStrike" },
-            SynergyCards = { "Offering", "ForgottenRitual", "EvilEye", "Cascade", "Havoc", "Stoke" },
+            CoreCards = { "BurningPact", "TrueGrit", "FiendFire", "SecondWind", "PactsEnd",
+                          "AshenStrike" },
+            SynergyCards = { "Offering", "ForgottenRitual", "EvilEye", "Cascade", "Havoc", "Stoke",
+                             "Brand", "Cinder", "DrumOfBattle", "HowlFromBeyond", "Thrash" },
             AntiCards = { "Rampage", "PerfectedStrike" }
         },
         new Archetype
@@ -69,8 +74,11 @@ public static class ArchetypeDatabase
             Name = "Strength",
             DisplayName = "力量流",
             SignatureCards = { "DemonForm", "Colossus" },
-            CoreCards = { "Inflame", "Whirlwind", "Bludgeon", "PrimalForce", "Conflagration", "MoltenFist" },
-            SynergyCards = { "Offering", "BattleTrance", "Taunt", "Uppercut", "Cruelty", "Vicious" },
+            CoreCards = { "Inflame", "Whirlwind", "Bludgeon", "PrimalForce", "Conflagration",
+                          "MoltenFist" },
+            SynergyCards = { "Offering", "BattleTrance", "Taunt", "Uppercut", "Cruelty", "Vicious",
+                             "FightMe", "Dominate", "SetupStrike", "OneTwoPunch", "Bully",
+                             "Dismantle", "Stomp", "Thunderclap", "Pillage", "Unrelenting" },
             AntiCards = { "BodySlam", "Barricade" }
         },
         new Archetype
@@ -80,12 +88,13 @@ public static class ArchetypeDatabase
             DisplayName = "烧血流",
             SignatureCards = { "Rupture", "Inferno" },
             CoreCards = { "Bloodletting", "Offering", "Hemokinesis", "Feed", "Breakthrough" },
-            SynergyCards = { "BurningPact", "Hellraiser", "Pyre", "Aggression", "Thrash" },
+            SynergyCards = { "BurningPact", "Hellraiser", "Pyre", "Aggression", "Thrash", "Brand",
+                             "TearAsunder", "Spite", "BloodWall", "DemonicShield" },
             AntiCards = { }
         },
 
         // ============================================================
-        //  静默猎手 (Silent)
+        //  静默猎手 (Silent) — 88张
         // ============================================================
         new Archetype
         {
@@ -93,8 +102,11 @@ public static class ArchetypeDatabase
             Name = "Poison",
             DisplayName = "毒流",
             SignatureCards = { "CorrosiveWave", "Accelerant", "Envenom" },
-            CoreCards = { "NoxiousFumes", "DeadlyPoison", "BouncingFlask", "PoisonedStab", "Outbreak" },
-            SynergyCards = { "Acrobatics", "Footwork", "Backflip", "BulletTime", "Burst", "WellLaidPlans", "KnifeTrap" },
+            CoreCards = { "NoxiousFumes", "DeadlyPoison", "BouncingFlask", "PoisonedStab",
+                          "Outbreak" },
+            SynergyCards = { "Acrobatics", "Footwork", "Backflip", "BulletTime", "Burst",
+                             "WellLaidPlans", "BubbleBubble", "Haze", "Snakebite", "Mirage",
+                             "Blur", "Strangle", "LegSweep" },
             AntiCards = { "Accuracy", "InfiniteBlades" }
         },
         new Archetype
@@ -103,8 +115,12 @@ public static class ArchetypeDatabase
             Name = "Discard",
             DisplayName = "弃牌/Sly流",
             SignatureCards = { "Sneaky", "Tactician", "Reflex" },
-            CoreCards = { "Acrobatics", "CalculatedGamble", "Prepared", "HandTrick", "ToolsOfTheTrade", "Abrasive" },
-            SynergyCards = { "Speedster", "Backflip", "MasterPlanner", "Adrenaline", "EscapePlan", "FlickFlack", "Ricochet", "Untouchable" },
+            CoreCards = { "Acrobatics", "CalculatedGamble", "Prepared", "HandTrick",
+                          "ToolsOfTheTrade", "Abrasive" },
+            SynergyCards = { "Speedster", "Backflip", "MasterPlanner", "Adrenaline", "EscapePlan",
+                             "FlickFlack", "Ricochet", "Untouchable", "MementoMori",
+                             "DaggerThrow", "StormOfSteel", "ShadowStep", "GrandFinale",
+                             "Expertise" },
             AntiCards = { "Accuracy" }
         },
         new Archetype
@@ -113,13 +129,16 @@ public static class ArchetypeDatabase
             Name = "Shiv",
             DisplayName = "飞刀流",
             SignatureCards = { "Accuracy", "KnifeTrap" },
-            CoreCards = { "BladeDance", "CloakAndDagger", "InfiniteBlades", "HiddenDaggers", "FanOfKnives", "StormOfSteel" },
-            SynergyCards = { "Finisher", "Footwork", "Backflip", "Burst", "Afterimage", "PhantomBlades" },
+            CoreCards = { "BladeDance", "CloakAndDagger", "InfiniteBlades", "HiddenDaggers",
+                          "FanOfKnives", "StormOfSteel" },
+            SynergyCards = { "Finisher", "Footwork", "Backflip", "Burst", "Afterimage",
+                             "PhantomBlades", "UpMySleeve", "LeadingStrike", "BladeOfInk",
+                             "Adrenaline" },
             AntiCards = { "CorrosiveWave", "Envenom", "NoxiousFumes" }
         },
 
         // ============================================================
-        //  储君 / 摄政者 (Regent)
+        //  储君 / 摄政者 (Regent) — 88张
         // ============================================================
         new Archetype
         {
@@ -127,10 +146,12 @@ public static class ArchetypeDatabase
             Name = "Stars",
             DisplayName = "星辰流",
             SignatureCards = { "DecisionsDecisions", "BigBang", "VoidForm" },
-            CoreCards = { "Glow", "HiddenCache", "Radiate", "Reflect", "Genesis", "DyingStar", "SevenStars",
-                          "GammaBlast", "Alignment", "Comet", "HeavenlyDrill" },
+            CoreCards = { "Glow", "HiddenCache", "Radiate", "Reflect", "Genesis", "DyingStar",
+                          "SevenStars", "GammaBlast", "Alignment", "Comet", "HeavenlyDrill" },
             SynergyCards = { "Convergence", "CloakOfStars", "GatherLight", "Stardust", "ParticleWall",
-                             "Bombardment", "ChildOfTheStars", "MakeItSo", "Orbit", "ShiningStrike", "RoyalGamble" },
+                             "Bombardment", "ChildOfTheStars", "MakeItSo", "Orbit", "ShiningStrike",
+                             "RoyalGamble", "TheSealedThrone", "SolarStrike", "CrescentSpear",
+                             "Venerate", "BlackHole", "LunarBlast", "Prophesize" },
             AntiCards = { "WroughtInWar", "SpoilsOfBattle" }
         },
         new Archetype
@@ -142,12 +163,13 @@ public static class ArchetypeDatabase
             CoreCards = { "WroughtInWar", "SummonForth", "BeatIntoShape", "SeekingEdge",
                           "CosmicIndifference", "Bulwark" },
             SynergyCards = { "SwordSage", "SpoilsOfBattle", "HeirloomHammer", "RefineBlade",
-                             "ForegoneConclusion", "Guards", "Charge" },
+                             "ForegoneConclusion", "Guards", "Charge", "TheSmith", "Parry",
+                             "HammerTime", "CollisionCourse", "Patter" },
             AntiCards = { "DecisionsDecisions", "BigBang", "VoidForm" }
         },
 
         // ============================================================
-        //  缚灵师 / 亡灵契约师 (Necrobinder)
+        //  缚灵师 / 亡灵契约师 (Necrobinder) — 88张
         // ============================================================
         new Archetype
         {
@@ -158,7 +180,8 @@ public static class ArchetypeDatabase
             CoreCards = { "NegativePulse", "BorrowedTime", "Deathbringer", "Scourge", "Shroud",
                           "TimesUp", "NoEscape", "Defy" },
             SynergyCards = { "Delay", "Countdown", "BlightStrike", "Defile", "EnfeeblingTouch",
-                             "Fear", "Hang", "Oblivion" },
+                             "Fear", "Hang", "Oblivion", "SleightOfFlesh", "Neurosurge",
+                             "Debilitate", "Putrefy", "Misery" },
             AntiCards = { }
         },
         new Archetype
@@ -169,7 +192,9 @@ public static class ArchetypeDatabase
             SignatureCards = { "Dirge", "Squeeze", "Protector" },
             CoreCards = { "Fetch", "Spur", "SicEm", "Rattle", "Calcify", "Flatten",
                           "Bodyguard", "HighFive", "NecroMastery" },
-            SynergyCards = { "PullAggro", "Afterlife", "BorrowedTime", "GraveWarden", "RightHandHand" },
+            SynergyCards = { "PullAggro", "Afterlife", "BorrowedTime", "GraveWarden",
+                             "RightHandHand", "Sacrifice", "Poke", "Snap", "BoneShards",
+                             "Cleanse", "LegionOfBone" },
             AntiCards = { }
         },
         new Archetype
@@ -177,16 +202,18 @@ public static class ArchetypeDatabase
             Character = "Necrobinder",
             Name = "Souls",
             DisplayName = "灵魂流",
-            SignatureCards = { "SoulStorm", "SpiritOfAsh" },
-            CoreCards = { "CaptureSpirit", "Graveblast", "Haunt", "DevourLife", "Seance",
-                          "DeathMarch", "Dredge", "Reanimate" },
+            SignatureCards = { "SoulStorm", "SpiritOfAsh", "DevourLife" },
+            CoreCards = { "CaptureSpirit", "Graveblast", "Haunt", "Seance",
+                          "DeathMarch", "Dredge", "Reanimate", "Pagestorm" },
             SynergyCards = { "BorrowedTime", "Wisp", "Invoke", "Severance", "GraveWarden",
-                             "Transfigure", "CallOfTheVoid" },
+                             "Transfigure", "CallOfTheVoid", "Reave", "SculptingStrike",
+                             "Veilpiercer", "PullFromBelow", "GlimpseBeyond",
+                             "BansheesCry", "Eidolon" },
             AntiCards = { }
         },
 
         // ============================================================
-        //  缺陷体 / 故障机器人 (Defect)
+        //  缺陷体 / 故障机器人 (Defect) — 88张
         // ============================================================
         new Archetype
         {
@@ -194,9 +221,11 @@ public static class ArchetypeDatabase
             Name = "Claw",
             DisplayName = "利爪流",
             SignatureCards = { "Claw", "AllForOne" },
-            CoreCards = { "Scrape", "Ftl", "MomentumStrike", "GoForTheEyes", "BeamCell" },
-            SynergyCards = { "Hologram", "MachineLearning", "Feral", "BootSequence",
-                             "Overclock", "Compact" },
+            CoreCards = { "Scrape", "Ftl", "MomentumStrike", "GoForTheEyes", "BeamCell",
+                          "Feral" },
+            SynergyCards = { "Hologram", "MachineLearning", "BootSequence",
+                             "Overclock", "Compact", "Turbo", "GunkUp", "Uproar",
+                             "AdaptiveStrike" },
             AntiCards = { }
         },
         new Archetype
@@ -205,9 +234,11 @@ public static class ArchetypeDatabase
             Name = "Lightning",
             DisplayName = "闪电球流",
             SignatureCards = { "Storm", "Voltaic" },
-            CoreCards = { "Thunder", "LightningRod", "Tempest", "TeslaCoil" },
-            SynergyCards = { "Defragment", "Capacitor", "BallLightning", "Overclock",
-                             "MachineLearning", "EchoForm", "DoubleEnergy", "Buffer" },
+            CoreCards = { "Thunder", "LightningRod", "Tempest", "TeslaCoil",
+                          "BallLightning" },
+            SynergyCards = { "Defragment", "Capacitor", "Overclock",
+                             "MachineLearning", "EchoForm", "DoubleEnergy", "Buffer",
+                             "SweepingBeam", "CompileDriver", "Fusion", "Subroutine" },
             AntiCards = { }
         },
         new Archetype
@@ -216,9 +247,11 @@ public static class ArchetypeDatabase
             Name = "Frost",
             DisplayName = "冰球流",
             SignatureCards = { "Glacier" },
-            CoreCards = { "Coolheaded", "Chill", "ColdSnap", "Coolant", "IceLance", "Hailstorm" },
-            SynergyCards = { "Defragment", "Capacitor", "Buffer", "Loop", "EchoForm",
-                             "MachineLearning", "Compact" },
+            CoreCards = { "Coolheaded", "Chill", "ColdSnap", "Coolant", "IceLance",
+                          "Hailstorm", "Loop" },
+            SynergyCards = { "Defragment", "Capacitor", "Buffer", "EchoForm",
+                             "MachineLearning", "Compact", "ShadowShield", "Leap",
+                             "ChargeBattery", "GeneticAlgorithm", "CompileDriver" },
             AntiCards = { }
         },
         new Archetype
@@ -226,10 +259,11 @@ public static class ArchetypeDatabase
             Character = "Defect",
             Name = "Dark",
             DisplayName = "暗球流",
-            SignatureCards = { "Darkness" },
-            CoreCards = { "ConsumingShadow", "Null", "MultiCast", "Rainbow" },
+            SignatureCards = { "Darkness", "ConsumingShadow" },
+            CoreCards = { "Null", "MultiCast", "Rainbow", "ShadowShield" },
             SynergyCards = { "Defragment", "Capacitor", "EchoForm", "Buffer",
-                             "MachineLearning", "DoubleEnergy" },
+                             "MachineLearning", "DoubleEnergy", "Loop", "Coolheaded",
+                             "Shatter", "Reboot" },
             AntiCards = { }
         },
     };

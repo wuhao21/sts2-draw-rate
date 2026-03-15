@@ -52,11 +52,38 @@ public static class FinalPatch
             label.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 1));
             label.AddThemeConstantOverride("shadow_offset_x", 1);
             label.AddThemeConstantOverride("shadow_offset_y", 1);
-
             container.AddChild(label);
+
+            // Hover 详情层
+            float detailHeight = 180;
+            var detailBg = new ColorRect();
+            detailBg.Color = new Color(0.03f, 0.03f, 0.03f, 0.97f);
+            detailBg.SetSize(new Vector2(boxWidth, detailHeight));
+            detailBg.SetPosition(new Vector2(0, -detailHeight - 4));
+            detailBg.Visible = false;
+            container.AddChild(detailBg);
+
+            var detailLabel = new Label();
+            detailLabel.SetSize(new Vector2(boxWidth - 16, detailHeight - 8));
+            detailLabel.SetPosition(new Vector2(8, -detailHeight));
+            detailLabel.HorizontalAlignment = HorizontalAlignment.Left;
+            detailLabel.VerticalAlignment = VerticalAlignment.Top;
+            detailLabel.AddThemeFontSizeOverride("font_size", 16);
+            detailLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.9f, 1));
+            detailLabel.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 1));
+            detailLabel.AddThemeConstantOverride("shadow_offset_x", 1);
+            detailLabel.AddThemeConstantOverride("shadow_offset_y", 1);
+            detailLabel.Visible = false;
+            container.AddChild(detailLabel);
+
+            // 鼠标悬停事件
+            bg.MouseFilter = Control.MouseFilterEnum.Stop;
+            bg.MouseEntered += () => { detailBg.Visible = true; detailLabel.Visible = true; };
+            bg.MouseExited += () => { detailBg.Visible = false; detailLabel.Visible = false; };
+
             __instance.AddChild(container);
 
-            SetupTracker(__instance, container, border, label, uiName);
+            SetupTracker(__instance, container, border, label, detailLabel, uiName);
         }
         catch (System.Exception ex)
         {
@@ -64,7 +91,7 @@ public static class FinalPatch
         }
     }
 
-    private static void SetupTracker(NCard cardNode, Node2D container, ColorRect border, Label label, string myUiName)
+    private static void SetupTracker(NCard cardNode, Node2D container, ColorRect border, Label label, Label detailLabel, string myUiName)
     {
         var timer = new Godot.Timer();
         timer.WaitTime = 0.2f;
@@ -133,6 +160,12 @@ public static class FinalPatch
             var modelObj = cardNode.GetType().GetField("_model", flags)?.GetValue(cardNode)
                         ?? cardNode.GetType().GetProperty("Model", flags)?.GetValue(cardNode);
 
+            if (modelObj == null)
+            {
+                // 尝试更多属性名
+                modelObj = cardNode.GetType().GetProperty("CardModel", flags)?.GetValue(cardNode)
+                        ?? cardNode.GetType().GetProperty("Card", flags)?.GetValue(cardNode);
+            }
             if (modelObj == null)
             {
                 container.Visible = false;
@@ -292,6 +325,7 @@ public static class FinalPatch
                 label.Text = $"{line1}\n{line2}\n{line3}";
                 label.Modulate = Color.FromHtml(rec.ColorHex);
                 border.Color = Color.FromHtml(rec.ColorHex);
+                detailLabel.Text = rec.Breakdown;
             }
             else
             {
