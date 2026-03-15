@@ -55,7 +55,7 @@ public static class FinalPatch
             container.AddChild(label);
 
             // Hover 详情层 — detailLabel 作为 detailBg 子节点，开启裁剪防止溢出
-            float detailHeight = 280;
+            float detailHeight = 400;
             var detailBg = new ColorRect();
             detailBg.Color = new Color(0.03f, 0.03f, 0.03f, 0.97f);
             detailBg.SetSize(new Vector2(boxWidth, detailHeight));
