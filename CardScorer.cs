@@ -110,13 +110,50 @@ public static class CardScorer
             reason = GetArchetypeReason(cardInternalName, archetype);
         }
 
-        // 构建详细分解
+        // 构建自然语言详情
         var bd = new System.Text.StringBuilder();
-        bd.AppendLine($"阶段: {phase} ({deckSize}张)");
-        bd.AppendLine($"流派: {archetypeScore:F0} x{wArch:P0} = {archetypeScore * wArch:F0}");
-        bd.AppendLine($"统计: {statScore:F0} x{wStat:P0} = {statScore * wStat:F0}");
-        bd.AppendLine($"需求: {needScore:F0} x{wNeed:P0} = {needScore * wNeed:F0}");
-        bd.AppendLine($"基础分: {finalScore:F0}");
+
+        // 阶段说明
+        string phaseDesc = phase switch
+        {
+            "前期" => $"前期({deckSize}张) 优先生存",
+            "中期" => $"中期({deckSize}张) 兼顾流派",
+            "成型" => $"流派成型({deckSize}张)",
+            "后期" => $"后期({deckSize}张) 控制牌组",
+            _ => $"流派未成型({deckSize}张)"
+        };
+        bd.AppendLine(phaseDesc);
+
+        // 流派评价
+        string archDesc = archetypeScore switch
+        {
+            >= 85 => "流派核心，强烈契合",
+            >= 70 => "流派关键牌",
+            >= 55 => "与流派有一定协同",
+            >= 40 => "与流派关系一般",
+            _ => "与当前流派无关"
+        };
+        bd.AppendLine($"流派: {archDesc}");
+
+        // 统计评价
+        string statDesc = statScore switch
+        {
+            >= 80 => "社区公认强牌",
+            >= 60 => "统计表现不错",
+            >= 40 => "统计表现一般",
+            _ => "统计数据偏低"
+        };
+        bd.AppendLine($"数据: {statDesc}");
+
+        // 需求说明
+        string needReason = GetNeedReason(cardInternalName, deckProfile);
+        if (!string.IsNullOrEmpty(needReason))
+            bd.AppendLine($"牌组{needReason}，此牌可补");
+        else if (needScore <= 40)
+            bd.AppendLine("牌组不缺此类牌");
+
+        if (UniversallyGood.Contains(cardInternalName))
+            bd.AppendLine("任何流派都好用的通用牌");
 
         // 重复卡惩罚 — currentDeck 是模拟牌组（已含候选牌自身），需减1得到实际持有数
         int dupeCount = CountCard(currentDeck, cardInternalName) - 1;
@@ -124,12 +161,12 @@ public static class CardScorer
         {
             finalScore *= 0.6f;
             reason = $"已有{dupeCount}张，慎选";
-            bd.AppendLine($"重复x{dupeCount}: x0.6");
+            bd.AppendLine($"已有{dupeCount}张，扣分");
         }
         else if (dupeCount == 1 && archetypeScore < 70)
         {
             finalScore *= 0.85f;
-            bd.AppendLine("已有1张: x0.85");
+            bd.AppendLine("已有1张，轻微扣分");
         }
 
         // 牌组过大惩罚
@@ -137,7 +174,7 @@ public static class CardScorer
         {
             finalScore *= 0.7f;
             reason = "牌组臃肿，建议跳过";
-            bd.AppendLine("牌组臃肿: x0.7");
+            bd.AppendLine("牌组太大，不建议加牌");
         }
 
         // 血量感知 — 血量低时，格挡/防御牌加分
@@ -149,13 +186,13 @@ public static class CardScorer
                 finalScore += 12f;
                 if (reason == "一般")
                     reason = "血量低，需防御";
-                bd.AppendLine($"低血量防御: +12");
+                bd.AppendLine("血量低，防御牌加分");
             }
         }
 
         // Clamp
         finalScore = Math.Clamp(finalScore, 0, 100);
-        bd.AppendLine($"最终: {finalScore:F0}");
+        bd.AppendLine($"综合评分: {finalScore:F0}/100");
 
         var rec = new CardRecommendation { FinalScore = finalScore };
         rec.Stars = finalScore switch
@@ -275,9 +312,9 @@ public static class CardScorer
             weight = Math.Max(weight, w2 * 0.7f); // 副流派权重略低
         }
 
-        // 通用好牌保底
-        if (UniversallyGood.Contains(cardName) && weight < 1.0f)
-            weight = 1.5f;
+        // 通用好牌保底 — 至少 Core 级别
+        if (UniversallyGood.Contains(cardName) && weight < 2.0f)
+            weight = 2.0f;
 
         // 映射: -1.5 ~ 3.0 → 0 ~ 100
         return MapRange(weight, -1.5f, 3.0f, 10f, 100f);
