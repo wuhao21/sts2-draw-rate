@@ -69,7 +69,7 @@ public static class ArchetypeDatabase
             Name = "Strength",
             DisplayName = "力量流",
             SignatureCards = { "DemonForm", "Colossus" },
-            CoreCards = { "Inflame", "Whirlwind", "Bludgeon", "PrimalForce", "HeavyBlade", "MoltenFist" },
+            CoreCards = { "Inflame", "Whirlwind", "Bludgeon", "PrimalForce", "Conflagration", "MoltenFist" },
             SynergyCards = { "Offering", "BattleTrance", "Taunt", "Uppercut", "Cruelty", "Vicious" },
             AntiCards = { "BodySlam", "Barricade" }
         },
@@ -79,7 +79,7 @@ public static class ArchetypeDatabase
             Name = "SelfDamage",
             DisplayName = "烧血流",
             SignatureCards = { "Rupture", "Inferno" },
-            CoreCards = { "Bloodletting", "Offering", "Hemokinesis", "Feed", "Combust" },
+            CoreCards = { "Bloodletting", "Offering", "Hemokinesis", "Feed", "Breakthrough" },
             SynergyCards = { "BurningPact", "Hellraiser", "Pyre", "Aggression", "Thrash" },
             AntiCards = { }
         },
@@ -204,7 +204,7 @@ public static class ArchetypeDatabase
             Character = "Defect",
             Name = "Lightning",
             DisplayName = "闪电球流",
-            SignatureCards = { "Storm", "Voltaic", "Electrodynamics" },
+            SignatureCards = { "Storm", "Voltaic" },
             CoreCards = { "Thunder", "LightningRod", "Tempest", "TeslaCoil" },
             SynergyCards = { "Defragment", "Capacitor", "BallLightning", "Overclock",
                              "MachineLearning", "EchoForm", "DoubleEnergy", "Buffer" },
@@ -227,7 +227,7 @@ public static class ArchetypeDatabase
             Name = "Dark",
             DisplayName = "暗球流",
             SignatureCards = { "Darkness" },
-            CoreCards = { "DoomAndGloom", "Recursion", "MultiCast", "Rainbow" },
+            CoreCards = { "ConsumingShadow", "Null", "MultiCast", "Rainbow" },
             SynergyCards = { "Defragment", "Capacitor", "EchoForm", "Buffer",
                              "MachineLearning", "DoubleEnergy" },
             AntiCards = { }

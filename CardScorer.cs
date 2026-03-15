@@ -40,13 +40,16 @@ public static class CardScorer
     };
 
     /// <summary>
-    /// 为候选卡牌计算推荐分
+    /// 为候选卡牌计算推荐分（含局势感知）
     /// </summary>
     public static CardRecommendation Score(
         string cardInternalName,
         ArchetypeResult archetype,
         DeckProfile deckProfile,
-        ICollection<string> currentDeck)
+        ICollection<string> currentDeck,
+        int hp = 0,
+        int maxHp = 0,
+        int floor = 0)
     {
         // 1. 流派协同分 (0-100)
         float archetypeScore = ComputeArchetypeScore(cardInternalName, archetype);
@@ -75,8 +78,8 @@ public static class CardScorer
             reason = GetArchetypeReason(cardInternalName, archetype);
         }
 
-        // 重复卡惩罚（已有2张以上同名卡）
-        int dupeCount = CountCard(currentDeck, cardInternalName);
+        // 重复卡惩罚 — currentDeck 是模拟牌组（已含候选牌自身），需减1得到实际持有数
+        int dupeCount = CountCard(currentDeck, cardInternalName) - 1;
         if (dupeCount >= 2)
         {
             finalScore *= 0.6f;
@@ -96,6 +99,35 @@ public static class CardScorer
         {
             finalScore *= 0.7f;
             reason = "牌组臃肿，建议跳过";
+        }
+
+        // 前期加分 — 牌组小时加牌比跳过更有价值
+        int deckSize = currentDeck.Count;
+        if (deckSize <= 10)
+        {
+            finalScore += 18f;
+            if (string.IsNullOrEmpty(reason) || reason == "一般" || reason == "流派未成型，参考统计")
+                reason = "前期补强";
+        }
+        else if (deckSize <= 15)
+        {
+            finalScore += 10f;
+        }
+        else if (deckSize <= 20)
+        {
+            finalScore += 4f;
+        }
+
+        // 血量感知 — 血量低时，格挡/防御牌加分
+        if (maxHp > 0)
+        {
+            float hpRatio = (float)hp / maxHp;
+            if (hpRatio < 0.4f && DeckAnalyzer.IsBlockCard(cardInternalName))
+            {
+                finalScore += 12f;
+                if (reason == "前期补强" || reason == "一般")
+                    reason = "血量低，需防御";
+            }
         }
 
         // Clamp
@@ -120,11 +152,11 @@ public static class CardScorer
         };
         rec.ColorHex = rec.Stars switch
         {
-            5 => "#FFD700",  // 金
-            4 => "#5BFF5B",  // 绿
-            3 => "#E0E0E0",  // 白
-            2 => "#FF9933",  // 橙
-            _ => "#FF4444"   // 红
+            5 => "#E8A840",  // 柔橙 — 传说
+            4 => "#B07CD8",  // 柔紫 — 史诗
+            3 => "#5A9BD5",  // 柔蓝 — 稀有
+            2 => "#7DBF7D",  // 柔绿 — 普通
+            _ => "#A0A0A0"   // 柔灰 — 垃圾
         };
         rec.Reason = reason;
 
@@ -166,6 +198,42 @@ public static class CardScorer
         };
 
         return base_rec;
+    }
+
+    /// <summary>
+    /// 在一组候选卡中标记最优选择
+    /// </summary>
+    public static void MarkBestPick(List<CardRecommendation> recs, List<string> cardNames)
+    {
+        if (recs.Count <= 1) return;
+
+        int bestIdx = 0;
+        for (int i = 1; i < recs.Count; i++)
+        {
+            if (recs[i].FinalScore > recs[bestIdx].FinalScore)
+                bestIdx = i;
+        }
+
+        // 如果最优的也只是可跳/不推荐，升级为"可选"并标注三选一最优
+        var best = recs[bestIdx];
+        if (best.Stars <= 2)
+        {
+            best.Stars = 3;
+            best.Verdict = "三选一最优";
+            best.ColorHex = "#5A9BD5";
+        }
+        else if (best.Stars == 3)
+        {
+            best.Verdict = "三选一最优";
+        }
+
+        // 标记非最优的
+        for (int i = 0; i < recs.Count; i++)
+        {
+            if (i == bestIdx) continue;
+            if (recs[i].Stars <= 2 && recs[i].FinalScore < best.FinalScore - 5)
+                recs[i].Reason = "非最优选";
+        }
     }
 
     // ====== 内部评分方法 ======

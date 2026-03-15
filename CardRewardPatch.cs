@@ -153,24 +153,128 @@ public static class FinalPatch
                 return;
             }
 
+            // 诅咒/状态牌隐藏 — 敌人强制给的牌不需要评分
+            bool isCurseOrStatus = false;
+            try
+            {
+                // 检查模型的基类名或 CardType 属性
+                var modelType = modelObj.GetType();
+                string baseTypeName = modelType.BaseType?.Name ?? "";
+                if (baseTypeName.Contains("Curse") || baseTypeName.Contains("Status"))
+                    isCurseOrStatus = true;
+
+                // 也检查 CardType / Type 属性
+                if (!isCurseOrStatus)
+                {
+                    var cardTypeProp = modelType.GetProperty("CardType", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                                   ?? modelType.GetProperty("Type", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (cardTypeProp != null)
+                    {
+                        string typeName = cardTypeProp.GetValue(modelObj)?.ToString() ?? "";
+                        if (typeName.Contains("Curse") || typeName.Contains("Status"))
+                            isCurseOrStatus = true;
+                    }
+                }
+
+                // 完整诅咒/状态/Token牌名单
+                if (!isCurseOrStatus)
+                {
+                    isCurseOrStatus = internalName switch
+                    {
+                        // Curse (18)
+                        "AscendersBane" or "BadLuck" or "Clumsy" or "CurseOfTheBell"
+                        or "Debt" or "Decay" or "Doubt" or "Enthralled" or "Folly"
+                        or "Greed" or "Guilty" or "Injury" or "Normality" or "PoorSleep"
+                        or "Regret" or "Shame" or "SporeMind" or "Writhe"
+                        // Status (11)
+                        or "Beckon" or "Burn" or "Dazed" or "Debris" or "FranticEscape"
+                        or "Infection" or "Slimed" or "Soot" or "Toxic" or "Void" or "Wound"
+                        // Token状态牌
+                        or "Disintegration" or "MindRot" or "Sloth" or "WasteAway"
+                        => true,
+                        _ => false
+                    };
+                }
+            }
+            catch { }
+
+            if (isCurseOrStatus)
+            {
+                container.Visible = false;
+                return;
+            }
+
             container.Visible = true;
 
             // 3. 计算推荐分
             var deck = GameStateReader.GetDeck();
             var character = GameStateReader.GetCharacter();
             var gold = GameStateReader.GetGold();
+            var hp = GameStateReader.GetHp();
+            var maxHp = GameStateReader.GetMaxHp();
+            var floor = GameStateReader.GetFloor();
 
             if (deck.Count > 0)
             {
-                // 有牌组数据 → 动态推荐
-                var archetype = DeckAnalyzer.DetectArchetype(deck, character);
-                var deckProfile = DeckAnalyzer.AnalyzeDeck(deck);
+                // 模拟"选了这张牌之后"的牌组，基于模拟牌组评分
+                var simDeck = new System.Collections.Generic.List<string>(deck);
+                simDeck.Add(internalName);
+
+                var archetype = DeckAnalyzer.DetectArchetype(simDeck, character);
+                var deckProfile = DeckAnalyzer.AnalyzeDeck(simDeck);
 
                 CardRecommendation rec;
                 if (isShop)
-                    rec = CardScorer.ScoreShopItem(internalName, 0, gold, archetype, deckProfile, deck);
+                    rec = CardScorer.ScoreShopItem(internalName, 0, gold, archetype, deckProfile, simDeck);
                 else
-                    rec = CardScorer.Score(internalName, archetype, deckProfile, deck);
+                    rec = CardScorer.Score(internalName, archetype, deckProfile, simDeck, hp, maxHp, floor);
+
+                // 相对排名：找同级兄弟卡节点，做三选一对比
+                if (!isShop)
+                {
+                    try
+                    {
+                        var parent = cardNode.GetParent();
+                        if (parent != null)
+                        {
+                            var siblingNames = new System.Collections.Generic.List<string>();
+                            var siblingRecs = new System.Collections.Generic.List<CardRecommendation>();
+                            int myIndex = -1;
+
+                            foreach (Godot.Node sibling in parent.GetChildren())
+                            {
+                                if (sibling is NCard sibCard)
+                                {
+                                    var sibModel = sibCard.GetType().GetField("_model", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(sibCard)
+                                                ?? sibCard.GetType().GetProperty("Model", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(sibCard);
+                                    if (sibModel == null) continue;
+                                    string sibName = sibModel.GetType().Name;
+                                    if (sibName.StartsWith("Strike") || sibName.StartsWith("Defend")) continue;
+
+                                    // 每张候选牌都模拟"选了它之后"的牌组
+                                    var sibSimDeck = new System.Collections.Generic.List<string>(deck);
+                                    sibSimDeck.Add(sibName);
+                                    var sibArchetype = DeckAnalyzer.DetectArchetype(sibSimDeck, character);
+                                    var sibProfile = DeckAnalyzer.AnalyzeDeck(sibSimDeck);
+
+                                    var sibRec = CardScorer.Score(sibName, sibArchetype, sibProfile, sibSimDeck, hp, maxHp, floor);
+                                    siblingNames.Add(sibName);
+                                    siblingRecs.Add(sibRec);
+
+                                    if (sibName == internalName)
+                                        myIndex = siblingRecs.Count - 1;
+                                }
+                            }
+
+                            if (siblingRecs.Count >= 2 && myIndex >= 0)
+                            {
+                                CardScorer.MarkBestPick(siblingRecs, siblingNames);
+                                rec = siblingRecs[myIndex];
+                            }
+                        }
+                    }
+                    catch { /* 兄弟节点读取失败不影响主逻辑 */ }
+                }
 
                 string stars = new string('★', rec.Stars) + new string('☆', 5 - rec.Stars);
                 string line1 = $"{stars} {rec.Verdict}";
@@ -178,6 +282,8 @@ public static class FinalPatch
                 string line3 = archetype.IsUnformed
                     ? $"牌组{deck.Count}张 | 统计分{rec.FinalScore:F0}"
                     : $"{archetype.DisplayName} | 分数{rec.FinalScore:F0}";
+
+                // line3 += $" [{internalName}]"; // 调试用，正式版关闭
 
                 // 牌组臃肿提示跳过
                 if (deckProfile.DeckTooLarge && rec.Stars <= 3)

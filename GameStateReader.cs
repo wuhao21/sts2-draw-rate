@@ -22,12 +22,18 @@ public static class GameStateReader
     private static PropertyInfo? _goldProp;
     private static PropertyInfo? _characterProp;
     private static PropertyInfo? _relicsProp;
+    private static PropertyInfo? _hpProp;
+    private static PropertyInfo? _maxHpProp;
+    private static PropertyInfo? _floorProp;
 
     // 缓存
     private static List<string> _cachedDeck = new();
     private static List<string> _cachedRelics = new();
     private static string _cachedCharacter = "";
     private static int _cachedGold = 0;
+    private static int _cachedHp = 0;
+    private static int _cachedMaxHp = 0;
+    private static int _cachedFloor = 0;
     private static DateTime _lastRead = DateTime.MinValue;
     private static readonly TimeSpan ReadInterval = TimeSpan.FromSeconds(1);
 
@@ -65,6 +71,24 @@ public static class GameStateReader
     {
         TryRefreshState();
         return _cachedRelics;
+    }
+
+    public static int GetHp()
+    {
+        TryRefreshState();
+        return _cachedHp;
+    }
+
+    public static int GetMaxHp()
+    {
+        TryRefreshState();
+        return _cachedMaxHp;
+    }
+
+    public static int GetFloor()
+    {
+        TryRefreshState();
+        return _cachedFloor;
     }
 
     private static void BindReflectionPaths()
@@ -174,6 +198,35 @@ public static class GameStateReader
                 foreach (var relic in relicEnum)
                     _cachedRelics.Add(relic.GetType().Name);
             }
+
+            // HP — try common property names
+            if (_hpProp == null)
+            {
+                _hpProp = playerType.GetProperty("Hp", BindingFlags.Public | BindingFlags.Instance)
+                       ?? playerType.GetProperty("CurrentHp", BindingFlags.Public | BindingFlags.Instance)
+                       ?? playerType.GetProperty("Health", BindingFlags.Public | BindingFlags.Instance);
+            }
+            var hpVal = _hpProp?.GetValue(player);
+            if (hpVal is int hp) _cachedHp = hp;
+
+            if (_maxHpProp == null)
+            {
+                _maxHpProp = playerType.GetProperty("MaxHp", BindingFlags.Public | BindingFlags.Instance)
+                          ?? playerType.GetProperty("MaxHealth", BindingFlags.Public | BindingFlags.Instance);
+            }
+            var maxHpVal = _maxHpProp?.GetValue(player);
+            if (maxHpVal is int mhp) _cachedMaxHp = mhp;
+
+            // Floor / Act — on State object
+            if (_floorProp == null)
+            {
+                var stateType = state!.GetType();
+                _floorProp = stateType.GetProperty("Floor", BindingFlags.Public | BindingFlags.Instance)
+                          ?? stateType.GetProperty("CurrentFloor", BindingFlags.Public | BindingFlags.Instance)
+                          ?? stateType.GetProperty("MapNodeIndex", BindingFlags.Public | BindingFlags.Instance);
+            }
+            var floorVal = _floorProp?.GetValue(state);
+            if (floorVal is int f) _cachedFloor = f;
 
             // Character
             if (_characterProp == null)
