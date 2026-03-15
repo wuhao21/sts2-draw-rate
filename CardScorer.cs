@@ -298,6 +298,221 @@ public static class CardScorer
         }
     }
 
+    /// <summary>
+    /// 牌组查看模式 — 评估卡牌在当前牌组中的适配度、是否删除、锻造优先级
+    /// </summary>
+    public static CardRecommendation ScoreDeckCard(
+        string cardInternalName,
+        ArchetypeResult archetype,
+        DeckProfile deckProfile,
+        ICollection<string> currentDeck)
+    {
+        var bd = new System.Text.StringBuilder();
+
+        // ── 牌组总览 ──
+        bd.AppendLine("── 牌组总览 ──");
+        int formation = ComputeFormation(archetype, currentDeck);
+        if (archetype.IsUnformed)
+            bd.AppendLine($"流派未成型 ({currentDeck.Count}张)");
+        else if (archetype.IsHybrid && archetype.Secondary != null)
+            bd.AppendLine($"{archetype.Primary!.DisplayName}+{archetype.Secondary.DisplayName} 成型{formation}% ({currentDeck.Count}张)");
+        else
+            bd.AppendLine($"{archetype.DisplayName} 成型{formation}% ({currentDeck.Count}张)");
+
+        var needs = new System.Collections.Generic.List<string>();
+        if (deckProfile.NeedsDraw) needs.Add("过牌");
+        if (deckProfile.NeedsAoe) needs.Add("AOE");
+        if (deckProfile.NeedsBlock) needs.Add("格挡");
+        if (needs.Count > 0)
+            bd.AppendLine($"缺: {string.Join("、", needs)}");
+        if (deckProfile.DeckTooLarge)
+            bd.AppendLine("牌组臃肿，建议精简");
+
+        if (archetype.IsUnformed)
+            bd.AppendLine("建议: 拿强力单卡，等流派成型");
+        else if (formation < 40)
+            bd.AppendLine($"建议: 补充{archetype.Primary!.DisplayName}核心牌");
+        else if (formation < 70)
+            bd.AppendLine("建议: 精选高协同牌，控制数量");
+        else
+            bd.AppendLine("建议: 流派已成型，控制牌数");
+
+        bd.AppendLine();
+        bd.AppendLine("── 此牌 ──");
+
+        float fitScore = 50f;
+        string reason = "";
+
+        bool isBasic = cardInternalName.StartsWith("Strike") || cardInternalName.StartsWith("Defend");
+        if (isBasic)
+        {
+            fitScore = 20f;
+            reason = "基础牌，优先删除";
+            bd.AppendLine("基础牌，有机会应优先删除");
+        }
+        else if (archetype.Primary != null && !archetype.IsUnformed)
+        {
+            if (archetype.Primary.AntiCards.Contains(cardInternalName))
+            {
+                fitScore = 15f;
+                reason = $"与{archetype.Primary.DisplayName}冲突";
+                bd.AppendLine($"与{archetype.Primary.DisplayName}反协同");
+                bd.AppendLine("★ 建议删除");
+            }
+            else if (archetype.Primary.SignatureCards.Contains(cardInternalName))
+            {
+                fitScore = 95f;
+                reason = $"{archetype.Primary.DisplayName}标志牌";
+                bd.AppendLine($"{archetype.Primary.DisplayName}的标志性卡牌");
+            }
+            else if (archetype.Primary.CoreCards.Contains(cardInternalName))
+            {
+                fitScore = 82f;
+                reason = $"{archetype.Primary.DisplayName}关键";
+                bd.AppendLine($"{archetype.Primary.DisplayName}的关键组件");
+            }
+            else if (archetype.Primary.SynergyCards.Contains(cardInternalName))
+            {
+                fitScore = 65f;
+                reason = $"协同{archetype.Primary.DisplayName}";
+                bd.AppendLine($"与{archetype.Primary.DisplayName}有协同");
+            }
+            else
+            {
+                bool found = false;
+                if (archetype.IsHybrid && archetype.Secondary != null)
+                {
+                    if (archetype.Secondary.SignatureCards.Contains(cardInternalName))
+                    { fitScore = 78f; reason = $"{archetype.Secondary.DisplayName}核心"; found = true; bd.AppendLine($"{archetype.Secondary.DisplayName}的核心牌"); }
+                    else if (archetype.Secondary.CoreCards.Contains(cardInternalName))
+                    { fitScore = 68f; reason = $"{archetype.Secondary.DisplayName}关键"; found = true; bd.AppendLine($"{archetype.Secondary.DisplayName}的关键牌"); }
+                    else if (archetype.Secondary.SynergyCards.Contains(cardInternalName))
+                    { fitScore = 55f; reason = $"协同{archetype.Secondary.DisplayName}"; found = true; bd.AppendLine($"与{archetype.Secondary.DisplayName}有协同"); }
+                    else if (archetype.Secondary.AntiCards.Contains(cardInternalName))
+                    { fitScore = 25f; reason = $"与{archetype.Secondary.DisplayName}冲突"; found = true; bd.AppendLine($"与{archetype.Secondary.DisplayName}冲突，可考虑删除"); }
+                }
+
+                if (!found)
+                {
+                    if (UniversallyGood.Contains(cardInternalName))
+                    {
+                        fitScore = 72f;
+                        reason = "通用好牌";
+                        bd.AppendLine("通用强力卡牌，值得保留");
+                    }
+                    else
+                    {
+                        float statScore = ComputeStatScore(cardInternalName);
+                        fitScore = statScore * 0.6f + 20f;
+                        if (fitScore >= 55)
+                        { reason = "统计尚可"; bd.AppendLine("与流派无关，但统计尚可"); }
+                        else if (fitScore >= 40)
+                        { reason = "与流派无关"; bd.AppendLine("与当前流派无关联"); }
+                        else
+                        { reason = "偏弱，可删"; bd.AppendLine("与流派无关且偏弱，可考虑删除"); }
+                    }
+                }
+            }
+        }
+        else
+        {
+            float statScore = ComputeStatScore(cardInternalName);
+            fitScore = statScore;
+            if (UniversallyGood.Contains(cardInternalName))
+            { fitScore = Math.Max(fitScore, 72f); reason = "通用好牌"; bd.AppendLine("通用强力卡牌"); }
+            else if (statScore >= 65)
+            { reason = "统计强力"; bd.AppendLine("统计表现优秀"); }
+            else if (statScore >= 45)
+            { reason = "统计一般"; bd.AppendLine("统计表现一般"); }
+            else
+            { reason = "统计偏低"; bd.AppendLine("统计偏低，可考虑替换"); }
+        }
+
+        // 重复检查
+        int dupeCount = CountCard(currentDeck, cardInternalName);
+        if (dupeCount >= 3)
+        {
+            fitScore = Math.Min(fitScore, 25f);
+            reason = $"已有{dupeCount}张，过多";
+            bd.AppendLine($"已有{dupeCount}张，副本过多，建议删除");
+        }
+        else if (dupeCount == 2 && fitScore < 75)
+        {
+            fitScore *= 0.8f;
+            bd.AppendLine($"已有{dupeCount}张");
+        }
+
+        // 锻造建议
+        string forge = GetForgeRating(cardInternalName, archetype);
+        if (!string.IsNullOrEmpty(forge))
+            bd.AppendLine($"锻造: {forge}");
+
+        fitScore = Math.Clamp(fitScore, 0, 100);
+
+        var rec = new CardRecommendation { FinalScore = fitScore, Reason = reason };
+
+        if (isBasic || fitScore < 25)
+        {
+            rec.Stars = 1; rec.Verdict = "建议删除"; rec.ColorHex = "#A0A0A0";
+        }
+        else if (fitScore < 45)
+        {
+            rec.Stars = 2; rec.Verdict = "可精简"; rec.ColorHex = "#7DBF7D";
+        }
+        else
+        {
+            rec.Stars = fitScore switch { >= 85 => 5, >= 70 => 4, >= 55 => 3, _ => 2 };
+            rec.Verdict = rec.Stars switch { 5 => "核心牌", 4 => "重要", 3 => "适配", _ => "可精简" };
+            rec.ColorHex = rec.Stars switch { 5 => "#E8A840", 4 => "#B07CD8", 3 => "#5A9BD5", 2 => "#7DBF7D", _ => "#A0A0A0" };
+        }
+
+        rec.Breakdown = bd.ToString().TrimEnd();
+        return rec;
+    }
+
+    /// <summary>
+    /// 计算流派成型度百分比
+    /// </summary>
+    public static int ComputeFormation(ArchetypeResult archetype, ICollection<string> deck)
+    {
+        if (archetype.Primary == null || archetype.IsUnformed) return 0;
+
+        int keyHit = 0;
+        int keyTotal = archetype.Primary.SignatureCards.Count + archetype.Primary.CoreCards.Count;
+        int synergyHit = 0;
+
+        foreach (var card in deck)
+        {
+            if (archetype.Primary.SignatureCards.Contains(card)) keyHit++;
+            else if (archetype.Primary.CoreCards.Contains(card)) keyHit++;
+            else if (archetype.Primary.SynergyCards.Contains(card)) synergyHit++;
+        }
+
+        if (keyTotal == 0) return 0;
+        float pct = (float)keyHit / keyTotal;
+        float synergyBonus = Math.Min(0.2f, synergyHit * 0.04f);
+        return Math.Clamp((int)((pct + synergyBonus) * 100), 0, 100);
+    }
+
+    private static string GetForgeRating(string cardName, ArchetypeResult archetype)
+    {
+        if (cardName.StartsWith("Strike") || cardName.StartsWith("Defend"))
+            return "不建议，优先删除";
+
+        if (archetype.Primary == null || archetype.IsUnformed)
+        {
+            if (UniversallyGood.Contains(cardName)) return "★★★ 优先";
+            return "";
+        }
+
+        if (archetype.Primary.SignatureCards.Contains(cardName)) return "★★★ 优先";
+        if (archetype.Primary.CoreCards.Contains(cardName)) return "★★☆ 推荐";
+        if (archetype.Primary.SynergyCards.Contains(cardName)) return "★☆☆ 可以";
+        if (archetype.Primary.AntiCards.Contains(cardName)) return "不建议";
+        if (UniversallyGood.Contains(cardName)) return "★★☆ 推荐";
+        return "";
+    }
+
     // ====== 内部评分方法 ======
 
     private static float ComputeArchetypeScore(string cardName, ArchetypeResult archetype)

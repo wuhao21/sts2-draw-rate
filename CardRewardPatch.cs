@@ -55,7 +55,7 @@ public static class FinalPatch
             container.AddChild(label);
 
             // Hover 详情层
-            float detailHeight = 180;
+            float detailHeight = 200;
             var detailBg = new ColorRect();
             detailBg.Color = new Color(0.03f, 0.03f, 0.03f, 0.97f);
             detailBg.SetSize(new Vector2(boxWidth, detailHeight));
@@ -174,8 +174,8 @@ public static class FinalPatch
 
             string internalName = modelObj.GetType().Name;
 
-            // 基础牌隐藏
-            if (internalName.StartsWith("Strike") || internalName.StartsWith("Defend"))
+            // 基础牌隐藏（牌组查看模式下显示，方便标记删除建议）
+            if (!isGridOrDeck && (internalName.StartsWith("Strike") || internalName.StartsWith("Defend")))
             {
                 container.Visible = false;
                 foreach (Node child in cardNode.GetChildren())
@@ -249,6 +249,28 @@ public static class FinalPatch
 
             if (deck.Count > 0)
             {
+                if (isGridOrDeck)
+                {
+                    // 牌组查看模式 — 评估适配度、锻造建议
+                    var archetype = DeckAnalyzer.DetectArchetype(deck, character);
+                    var deckProfile = DeckAnalyzer.AnalyzeDeck(deck);
+                    var rec = CardScorer.ScoreDeckCard(internalName, archetype, deckProfile, deck);
+                    int formation = CardScorer.ComputeFormation(archetype, deck);
+
+                    string stars = new string('★', rec.Stars) + new string('☆', 5 - rec.Stars);
+                    string line1 = $"{stars} {rec.Verdict}";
+                    string line2 = rec.Reason;
+                    string line3 = archetype.IsUnformed
+                        ? $"未成型 | {deck.Count}张"
+                        : $"{archetype.DisplayName} {formation}% | {deck.Count}张";
+
+                    label.Text = $"{line1}\n{line2}\n{line3}";
+                    label.Modulate = Color.FromHtml(rec.ColorHex);
+                    border.Color = Color.FromHtml(rec.ColorHex);
+                    detailLabel.Text = rec.Breakdown;
+                }
+                else
+                {
                 // 模拟"选了这张牌之后"的牌组，基于模拟牌组评分
                 var simDeck = new System.Collections.Generic.List<string>(deck);
                 simDeck.Add(internalName);
@@ -326,6 +348,7 @@ public static class FinalPatch
                 label.Modulate = Color.FromHtml(rec.ColorHex);
                 border.Color = Color.FromHtml(rec.ColorHex);
                 detailLabel.Text = rec.Breakdown;
+                }
             }
             else
             {
