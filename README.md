@@ -84,10 +84,11 @@
 ### 安装步骤
 
 1. 从 [Releases](../../releases) 下载最新版本
-2. 解压到游戏的 `mods` 目录：
-   - **Windows**: `Slay the Spire 2/mods/CardProbMod/`
+2. 在 Steam 库中右键 `Slay the Spire 2` → `管理` → `浏览本地文件`，找到（或创建）`mods` 文件夹
+3. 解压到 `mods` 目录下：
+   - **Windows**: `Steam\steamapps\common\Slay the Spire 2\mods\CardProbMod\`
    - **macOS**: `SlayTheSpire2.app/Contents/MacOS/mods/CardProbMod/`
-3. 目录结构：
+4. 目录结构：
    ```
    mods/
    └── CardProbMod/
@@ -95,7 +96,7 @@
        ├── CardProbMod.json
        └── result_cleaned.csv
    ```
-4. 启动游戏，在选牌/商店界面即可看到推荐
+5. 启动游戏，在选牌/商店界面即可看到推荐
 
 > **注意**: 不需要 BaseLib，游戏原生支持 Mod 加载。
 

@@ -54,18 +54,19 @@ public static class FinalPatch
             label.AddThemeConstantOverride("shadow_offset_y", 1);
             container.AddChild(label);
 
-            // Hover 详情层
+            // Hover 详情层 — detailLabel 作为 detailBg 子节点，开启裁剪防止溢出
             float detailHeight = 280;
             var detailBg = new ColorRect();
             detailBg.Color = new Color(0.03f, 0.03f, 0.03f, 0.97f);
             detailBg.SetSize(new Vector2(boxWidth, detailHeight));
             detailBg.SetPosition(new Vector2(0, -detailHeight - 4));
+            detailBg.ClipContents = true;
             detailBg.Visible = false;
             container.AddChild(detailBg);
 
             var detailLabel = new Label();
             detailLabel.SetSize(new Vector2(boxWidth - 16, detailHeight - 8));
-            detailLabel.SetPosition(new Vector2(8, -detailHeight));
+            detailLabel.SetPosition(new Vector2(8, 4));
             detailLabel.HorizontalAlignment = HorizontalAlignment.Left;
             detailLabel.VerticalAlignment = VerticalAlignment.Top;
             detailLabel.AddThemeFontSizeOverride("font_size", 16);
@@ -73,13 +74,12 @@ public static class FinalPatch
             detailLabel.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 1));
             detailLabel.AddThemeConstantOverride("shadow_offset_x", 1);
             detailLabel.AddThemeConstantOverride("shadow_offset_y", 1);
-            detailLabel.Visible = false;
-            container.AddChild(detailLabel);
+            detailBg.AddChild(detailLabel);
 
             // 鼠标悬停事件
             bg.MouseFilter = Control.MouseFilterEnum.Stop;
-            bg.MouseEntered += () => { detailBg.Visible = true; detailLabel.Visible = true; };
-            bg.MouseExited += () => { detailBg.Visible = false; detailLabel.Visible = false; };
+            bg.MouseEntered += () => { detailBg.Visible = true; };
+            bg.MouseExited += () => { detailBg.Visible = false; };
 
             __instance.AddChild(container);
 
