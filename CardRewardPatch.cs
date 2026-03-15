@@ -55,7 +55,7 @@ public static class FinalPatch
             container.AddChild(label);
 
             // Hover 详情层
-            float detailHeight = 200;
+            float detailHeight = 280;
             var detailBg = new ColorRect();
             detailBg.Color = new Color(0.03f, 0.03f, 0.03f, 0.97f);
             detailBg.SetSize(new Vector2(boxWidth, detailHeight));
@@ -121,6 +121,7 @@ public static class FinalPatch
             bool isCombat = false;
             bool isShop = false;
             bool isGridOrDeck = false;
+            bool isDetailView = false;
 
             Node current = cardNode.GetParent();
             while (current != null)
@@ -133,9 +134,24 @@ public static class FinalPatch
                     isShop = true;
                 if (n.Contains("grid") || n.Contains("deck") || n.Contains("pile") || n.Contains("select") || n.Contains("remove"))
                     isGridOrDeck = true;
+                if (n.Contains("inspect") || n.Contains("detail") || n.Contains("zoom")
+                    || n.Contains("preview") || n.Contains("popup") || n.Contains("focus")
+                    || n.Contains("enlarged") || n.Contains("magnif"))
+                    isDetailView = true;
 
                 current = current.GetParent();
             }
+
+            // 也通过卡牌全局缩放比判断放大模式（备用检测）
+            float cardScale = 1f;
+            try
+            {
+                var gt = ((CanvasItem)cardNode).GetGlobalTransform();
+                cardScale = gt.X.Length();
+                if (cardScale > 1.2f)
+                    isDetailView = true;
+            }
+            catch { }
 
             // 战斗中隐藏
             if (isCombat)
@@ -149,11 +165,21 @@ public static class FinalPatch
                 return;
             }
 
-            // 动态排版
-            if (isShop && !isGridOrDeck)
-                container.Position = new Vector2(-boxWidth / 2, shopY);
+            // 动态排版：放大模式 → 反向缩放 + 移到右侧空白区域
+            if (isDetailView)
+            {
+                float invScale = 1f / cardScale;
+                container.Scale = new Vector2(invScale, invScale);
+                container.Position = new Vector2(-550f / cardScale, -200f / cardScale);
+            }
             else
-                container.Position = new Vector2(-boxWidth / 2, defaultY);
+            {
+                container.Scale = Vector2.One;
+                if (isShop && !isGridOrDeck)
+                    container.Position = new Vector2(-boxWidth / 2, shopY);
+                else
+                    container.Position = new Vector2(-boxWidth / 2, defaultY);
+            }
 
             // 2. 读取卡牌模型
             var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;

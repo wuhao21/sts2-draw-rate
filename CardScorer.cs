@@ -143,7 +143,7 @@ public static class CardScorer
             >= 40 => "统计表现一般",
             _ => "统计数据偏低"
         };
-        bd.AppendLine($"数据: {statDesc}");
+        bd.AppendLine($"数据: {statDesc} ({GetStatDetail(cardInternalName)})");
 
         // 需求说明
         string needReason = GetNeedReason(cardInternalName, deckProfile);
@@ -404,12 +404,15 @@ public static class CardScorer
                     {
                         float statScore = ComputeStatScore(cardInternalName);
                         fitScore = statScore * 0.6f + 20f;
+                        string statDetail = GetStatDetail(cardInternalName);
+                        string shortStat = CardDatabase.Data.TryGetValue(cardInternalName, out var cdb2)
+                            ? $"胜{cdb2.WinRate:F0}%/选{cdb2.PickRate:F0}%" : "";
                         if (fitScore >= 55)
-                        { reason = "统计尚可"; bd.AppendLine("与流派无关，但统计尚可"); }
+                        { reason = $"统计尚可 {shortStat}"; bd.AppendLine($"与流派无关，但统计尚可"); }
                         else if (fitScore >= 40)
-                        { reason = "与流派无关"; bd.AppendLine("与当前流派无关联"); }
+                        { reason = $"流派无关 {shortStat}"; bd.AppendLine($"与当前流派无关联"); }
                         else
-                        { reason = "偏弱，可删"; bd.AppendLine("与流派无关且偏弱，可考虑删除"); }
+                        { reason = $"偏弱 {shortStat}"; bd.AppendLine($"与流派无关且偏弱"); }
                     }
                 }
             }
@@ -418,14 +421,17 @@ public static class CardScorer
         {
             float statScore = ComputeStatScore(cardInternalName);
             fitScore = statScore;
+            string statDetail = GetStatDetail(cardInternalName);
+            string shortStat = CardDatabase.Data.TryGetValue(cardInternalName, out var cdb)
+                ? $"胜{cdb.WinRate:F0}%/选{cdb.PickRate:F0}%" : "";
             if (UniversallyGood.Contains(cardInternalName))
-            { fitScore = Math.Max(fitScore, 72f); reason = "通用好牌"; bd.AppendLine("通用强力卡牌"); }
+            { fitScore = Math.Max(fitScore, 72f); reason = $"通用好牌 {shortStat}"; bd.AppendLine("通用强力卡牌"); }
             else if (statScore >= 65)
-            { reason = "统计强力"; bd.AppendLine("统计表现优秀"); }
+            { reason = $"统计强力 {shortStat}"; bd.AppendLine("统计表现优秀"); }
             else if (statScore >= 45)
-            { reason = "统计一般"; bd.AppendLine("统计表现一般"); }
+            { reason = $"统计一般 {shortStat}"; bd.AppendLine("统计表现一般"); }
             else
-            { reason = "统计偏低"; bd.AppendLine("统计偏低，可考虑替换"); }
+            { reason = $"统计偏低 {shortStat}"; bd.AppendLine("统计偏低"); }
         }
 
         // 重复检查
@@ -544,6 +550,16 @@ public static class CardScorer
         // 映射到 0-100 范围
         // 原始分范围大约 0-55，映射到 0-100
         return MapRange(data.Score, 15f, 55f, 10f, 100f);
+    }
+
+    /// <summary>
+    /// 返回带具体数据的统计描述（胜率/选取率/综合分）
+    /// </summary>
+    private static string GetStatDetail(string cardName)
+    {
+        if (!CardDatabase.Data.TryGetValue(cardName, out var data))
+            return "无统计数据";
+        return $"胜率{data.WinRate:F1}% 选取{data.PickRate:F1}% 综合{data.Score:F1}";
     }
 
     private static float ComputeNeedScore(string cardName, DeckProfile profile, ICollection<string> deck)
